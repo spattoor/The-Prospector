@@ -1,96 +1,80 @@
-# The Prospector — discover, curate, and act on the web’s most relevant events.
+# The Prospector
 
-## Inspiration
-The Prospector started from the need to surface timely, relevant events and content from scattered web sources — combining news, social, platform searches and local listings into a single discovery flow so users can find, save, and act on opportunities without hunting across many sites.
+A Node.js and Express portfolio demo for discovering public repositories and technology stories, saving favorites, and selecting relevant evidence with Gemini.
 
-## What it does
-- Aggregates events, news, and social content from multiple sources (Ticketmaster, Eventbrite, NewsAPI, GitHub, Reddit, local APIs) and synthesizes results.
-- Enhances items with AI-driven analysis (categorization, relevance, urgency, confidence).
-- Lets users save and star discoveries; saved items persist to MongoDB when available.
-- Optional Google Calendar integration to add starred items as calendar events.
-- Supports Google sign-in for fast authentication and secure session creation server-side.
-- Provides a single-page UI for search, preview, and quick actions (star, save, export).
-- Includes dev helpers (CSP relaxations and a GitHub proxy) to unblock third‑party integrations during local development.
+**Live link:** pending deployment. **Screenshot:** save the deployed app as `docs/screenshot.png`, then embed it here.
 
-## How we built it
-- Backend: Node.js + Express, Passport session auth, Mongoose for MongoDB. Dev-friendly single-file server (`enhanced-server-apis.js`) included for quick local runs.
-- Frontend: Single-file vanilla JS app (`simple-app.html`) that dynamically loads Google APIs, performs searches, and syncs favorites to the server.
-- Integrations: NewsAPI, Ticketmaster, Eventbrite, API‑Ninja, OpenWeather, Reddit/GitHub scrapers, and Google Calendar.
-- AI: Hooks for generative analysis used for categorization and recommendations where configured.
+## Reviewed deployment path
 
-## Challenges we ran into
-- Browser Content Security Policy (CSP) blocked third-party scripts and fetches during local testing.
-- Google discovery and OAuth require correct Authorized JavaScript origins and API key setup in Google Cloud Console.
-- Cross-origin cookies and session management required careful CORS and cookie configuration.
-- Normalizing heterogeneous external data sources required robust fallback logic.
+The reviewed runtime is **`deploy/server.mjs`**, with its own pinned dependencies and lockfile. It serves only `deploy/public/`. It does not execute the older servers, serve the repository root, or require the absent `client/` directory.
 
-## Accomplishments that we're proud of
-- Unified discovery pipeline that ranks and deduplicates multi-source results.
-- Local-first UX: localStorage fallback with sync-on-login so guests can interact without losing data.
-- Google Calendar integration and Google sign-in flow (client + server verification) implemented.
-- Developer experience improvements: dev CSP middleware, a GitHub proxy, and debug endpoints.
+- Live GitHub repository search and Hacker News search; visible per-source availability and deduplication. This deployment claims two sources, not five verified APIs.
+- Optional username/password accounts, favorites, and search history in MongoDB. Passwords use salted scrypt hashes; sessions use random opaque tokens with hashed storage, expiry and HTTP-only cookies. Ownership is checked server-side.
+- Without MongoDB the UI explicitly uses guest-only search; accounts and persistence are unavailable.
+- Optional Gemini evidence selection from fresh search results. Runtime validation rejects invented IDs, unexpected fields and inconsistent answers. The displayed facts come from source results. Unavailable AI is visibly labeled.
+- A small cited TTU evidence endpoint for the separate student dashboard. It uses curated public sources, not student records. This is evidence selection and lexical retrieval, not embedding/vector search.
 
-## What we learned
-- CSP, SameSite cookies, and OAuth origin settings are the most frequent integration blockers.
-- Local-first designs speed up iteration and prevent lost user actions.
-- Clear debug endpoints and server logs save hours when integrating many external APIs.
+The original Gemini TypeScript service was inspected, but its original Vite app cannot build from the current checkout because `client/` is absent. The new deployment is an explicit smaller demo; Google sign-in, Calendar integration, newsletter sending and the old multi-API discovery paths are not claimed as deployed.
 
-## What's next for THE PROSPECTOR
-- Restore strict auth and ownership checks for production and gate testing relaxations behind an env flag.
-- Finalize chat/personalization DB migration.
-- Improve UI for calendar and favorites management, add sync indicators.
-- Expand local venue APIs and add tests/CI for key routes.
+## Run
 
----
-
-## Quick start (local development)
-1. Copy `.env.example` to `.env` and set API keys (Google, NewsAPI, Ticketmaster, Eventbrite, MongoDB URI, SESSION_SECRET).
-2. Install dependencies:
+Use Node.js 22:
 
 ```bash
-npm install
+cd deploy
+npm ci
+cp .env.example .env
+npm start
 ```
 
-3. Start dev server (runs the TypeScript server in development mode):
+Open `http://localhost:3000`. Configure fresh credentials in `deploy/.env` for local use. On Render set **Root directory `deploy`**, build command **`npm ci --omit=dev`**, start command **`npm start`**, instance **Free**.
 
 ```bash
-npm run dev
+cd deploy
+npm test
 ```
 
-4. Open `http://localhost:3000` in your browser. For Google OAuth and Calendar to work, add `http://localhost:3000` to your project's Authorized JavaScript origins in the Google Cloud Console.
+## Environment
 
-## Demo credentials
-- Use `/api/test/create-demo-user` to create a demo user when MongoDB is configured.
+| Variable | Required | Purpose |
+|---|---|---|
+| `PORT` | No | Hosting supplies it; local default 3000 |
+| `NODE_ENV` | Production | `production` enables secure cookies and proxy handling |
+| `GEMINI_API_KEY` | AI only | Fresh server-side Gemini key |
+| `GEMINI_MODEL` | No | `gemini-3.5-flash-lite`; verify account access |
+| `MONGODB_URI` | Persistence only | Fresh Atlas database user/connection string |
+| `CAMPUS_ORIGIN` | Campus API only | Exact frontend origin; default `https://spattoor.github.io` |
 
-## Markdown tips (learn more)
-Text formatting
+Never put provider keys into browser code, GitHub, screenshots, or chat. The server limits requests, bounds source/AI input and output, sets timeouts, and caches public searches and successful AI calls. AI caps reset on process restart; they are not provider billing caps. Use a free-only model project and inspect provider quotas.
 
-```
-## Headline
-**bold**
-_ italics _
-[link](http://foo.bar)
-![Alt text](/path/to/img.jpg)
-```
+## Architecture
 
-Code block example
-
-```ruby
-puts "Hello World!"
-```
-
-## LaTeX math tips (learn more)
-Inline math: `\( ... \)`
-
-Displayed math:
-
-```
-$$
-... 
-$$
+```mermaid
+flowchart LR
+  U[Reviewed browser UI] --> E[Express API]
+  E --> G[GitHub search API]
+  E --> H[Hacker News API]
+  E --> M[MongoDB: users, sessions, favorites, history]
+  E --> A[Server-side Gemini evidence selection]
+  A --> V[Validate supplied IDs and render source facts]
+  T[TTU dashboard] --> C[Curated cited TTU evidence endpoint]
 ```
 
----
+## Security status and verification limits
 
-## Notes
-You recently added calendar integration, report features, and Google authentication; those are wired into the client and server (see `simple-app.html` and the server routes). If you'd like, I can add a concise "How to configure Google Cloud Console" section next, or commit a small `.env.example` with placeholder keys.
+The original repository history contains exposed credentials. Current-source cleanup removes tracked env/cookie/state files and literal values identified in the reviewed source. **This does not revoke keys or erase old commits.** Rotate all exposed provider tokens, GitHub tokens and database passwords before claiming remediation; history cleanup is still separate work.
+
+Local checks exercise password verification, guest limitations, account ownership, logout, input/origin restrictions, curated retrieval, AI output validation and provider failure. Database ownership tests use an in-memory adapter; they are not proof of real MongoDB persistence. A separate live source check returned GitHub and Hacker News results. Hosting, live AI in this service, real database storage/restart behavior and the campus browser integration remain to be verified.
+
+## Common failures
+
+| Symptom | Fix |
+|---|---|
+| Build asks for `client/index.html` | Render root must be `deploy`, not repository root |
+| Guest-only mode | Add a fresh `MONGODB_URI`, then restart |
+| Startup fails after adding MongoDB | Check Atlas database user, encoded password, network access and URI; server does not silently substitute memory storage |
+| AI unavailable | Check fresh server key, model access and free quota; do not label source results as AI |
+| Secure cookie absent locally | Use development mode locally; production requires HTTPS |
+| Campus CORS failure | Set the exact deployed frontend origin, including scheme |
+
+Render’s Free service can sleep after inactivity. Open it before a live demonstration; no always-on availability or latency claim is made.

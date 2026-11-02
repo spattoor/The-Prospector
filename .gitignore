@@ -1,4 +1,10 @@
 node_modules
+.env
+.env.*
+!.env.example
+.local/
+cookies.txt
+*.log
 dist
 .DS_Store
 server/public

@@ -1189,12 +1189,12 @@
         // GitHub and Reddit API Configuration
         const API_CONFIG = {
             github: {
-                token: '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',
+                token: 'REMOVED_EXPOSED_GITHUB_TOKEN',
                 baseUrl: 'https://api.github.com'
             },
             reddit: {
                 clientId: '6WvFTgrgGLXjqOyXGRSlZQ',
-                clientSecret: 'jb3MA8zQxBllZIVPV6PtqkFrut-m-g',
+                clientSecret: 'REMOVED_EXPOSED_REDDIT_CLIENT_SECRET',
                 userAgent: 'wild west prospector scraper v1.0',
                 redirectUri: 'http://localhost:8080',
                 baseUrl: 'https://www.reddit.com/api/v1'
